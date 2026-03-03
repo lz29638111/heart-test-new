@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>血管健康自測系統</title>
+    <style>
+        :root { --purple: #8e24aa; --pink: #ec407a; }
+        * { box-sizing: border-box; }
+        body { font-family: "Microsoft JhengHei", sans-serif; padding: 15px; background-color: #fce4ec; color: #333; margin: 0; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        .logo { width: 90px; height: auto; margin-bottom: 10px; border-radius: 50%; }
+        h2 { color: var(--purple); margin-bottom: 10px; }
+        .desc-box { font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 25px; background: #fef0f5; padding: 15px; border-radius: 12px; text-align: left; }
+        
+        .label-text { display: block; text-align: left; margin-left: 5px; font-weight: bold; color: var(--purple); font-size: 14px; }
+        .info-input { width: 100%; padding: 14px; margin: 8px 0 20px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; outline: none; transition: 0.3s; }
+        .info-input:focus { border-color: var(--pink); }
+        
+        .start-btn { background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; border: none; padding: 18px; width: 100%; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3); }
+
+        .progress-container { height: 8px; background: #eee; border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(to right, var(--purple), var(--pink)); width: 0%; transition: 0.4s; }
+        .q-img { width: 100%; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .q-text { font-size: 19px; font-weight: bold; color: #333; margin-bottom: 30px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .choice-btn { padding: 25px 0; border-radius: 15px; border: 2px solid var(--purple); background: white; color: var(--purple); font-size: 20px; font-weight: bold; cursor: pointer; }
+
+        #quiz-page, #result-page { display: none; }
+        .result-card { padding: 20px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; background: #fff; }
+        
+        /* 診所列表樣式 */
+        .clinic-box { margin-top: 20px; border-top: 2px dashed #eee; padding-top: 20px; }
+        .clinic-item { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 1px solid #eee; }
+        .clinic-name { font-weight: bold; color: var(--purple); font-size: 17px; margin-bottom: 5px; }
+        .clinic-info { font-size: 13px; color: #666; line-height: 1.4; }
+        .add-line-btn { background: #00B900; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none; display: block; text-align: center; margin-top: 10px; }
+        
+        .test-id { font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px; color: #444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://lh3.googleusercontent.com/d/1ckJAqfipxFenK9jfxqGIsUc4Dy2ufMVM" class="logo">
+        
+        <div id="start-page">
+            <h2>血管健康自測系統</h2>
+            <div class="desc-box">透過專業指標，了解您的血管老化風險。測驗後將提供照護建議與鄰近診所資訊。</div>
+            
+            <label class="label-text">您的姓名</label>
+            <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
+            
+            <label class="label-text">出生年月日 (民國年月日，如：660606)</label>
+            <input type="tel" id="input-birthday" class="info-input" placeholder="例如：660606" maxlength="7">
+            
+            <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始免費檢測</button>
+        </div>
+
+        <div id="quiz-page">
+            <div class="progress-container"><div id="progress" class="progress-fill"></div></div>
+            <img id="q-image" class="q-img" src="">
+            <div id="q-text" class="q-text">載入中...</div>
+            <div class="btn-group">
+                <button class="choice-btn" onclick="handleAnswer(true)">是 (YES)</button>
+                <button class="choice-btn" style="border-color:#999; color:#666;" onclick="handleAnswer(false)">否 (NO)</button>
+            </div>
+        </div>
+
+        <div id="result-page"></div>
+    </div>
+
+    <script>
+        // 請務必替換成部署後的後端 URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
+        
+        let realName = "", userAge = 0, userBirthday = "", testID = "";
+        let questionList = [], currentIndex = 0, userAnswers = [];
+        let configData = {}; // 存放診所與分析邏輯
+
+        function startQuiz() {
+            realName = document.getElementById('input-name').value.trim();
+            const birthInput = document.getElementById('input-birthday').value.trim();
+            
+            // 防呆：姓名不能為空，生日長度需在 6~7 位之間
+            if(!realName || birthInput.length < 6) return alert("請完整填寫姓名與生日格式 (如：660606)");
+
+            // --- 解析民國年月日邏輯 ---
+            try {
+                // 取得日(最後兩碼)、月(倒數三四碼)
+                const day = parseInt(birthInput.slice(-2));
+                const month = parseInt(birthInput.slice(-4, -2));
+                // 年份：扣除月日後剩下的前面號碼即為民國年
+                const rocYear = parseInt(birthInput.slice(0, birthInput.length - 4));
+                const year = rocYear + 1911;
+
+                const birthDate = new Date(year, month - 1, day);
+                const today = new Date();
+
+                // 檢查日期合法性 (例如月分不能大於12)
+                if (isNaN(birthDate.getTime()) || month > 12 || month < 1 || day > 31 || day < 1) {
+                    return alert("生日日期格式有誤，請檢查");
+                }
+
+                // 計算精準年齡
+                userAge = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
+
+                // 【關鍵】直接存入原始輸入字串，方便後台手動搜尋
+                userBirthday = birthInput; 
+
+            } catch (e) {
+                return alert("生日格式解析失敗，請輸入正確的數字格式");
+            }
+            // -----------------------
+
+            // 產生唯一編號
+            testID = "V-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+            const btn = document.getElementById('mainStartBtn');
+            btn.innerText = "正在初始化...";
+            btn.disabled = true;
+
+            // 一次抓取所有資料
+            fetch(API_URL).then(res => res.json()).then(data => {
+                questionList = data.questions;
+                configData = { clinics: data.clinics, levels: data.levels };
+                
+                document.getElementById('start-page').style.display = "none";
+                document.getElementById('quiz-page').style.display = "block";
+                showQuestion();
+            }).catch(err => {
+                alert("伺服器連線失敗，請稍後再試");
+                btn.disabled = false;
+                btn.innerText = "重新載入";
+            });
+        }
+
+        function showQuestion() {
+            const q = questionList[currentIndex];
+            document.getElementById('q-image').src = q.img || "https://and19868-gif.github.io/heart-test/cover.jpg";
+            document.getElementById('q-text').innerText = q.text;
+            document.getElementById('progress').style.width = ((currentIndex + 1) / questionList.length * 100) + "%";
+        }
+
+        function handleAnswer(val) {
+            userAnswers.push(val);
+            if (currentIndex < questionList.length - 1) {
+                currentIndex++;
+                showQuestion();
+            } else {
+                submitResult();
+            }
+        }
+
+        function recordClick(clinicName) {
+            // 當使用者點擊 LINE 好友連結時，發送一個小訊號到後端
+            fetch(API_URL, {
+                method: "POST",
+                mode: 'no-cors',
+                body: JSON.stringify({ action: "recordClick", testID: testID, clickedClinic: clinicName })
+            });
+        }
+
+        function submitResult() {
+            const score = userAnswers.filter(v => v).length;
+            
+            // 從 configData.levels 找尋對應得分的定義
+            let currentLevel = configData.levels.find(l => score >= l.min && score <= l.max) || configData.levels[0];
+
+            document.getElementById('quiz-page').style.display = "none";
+            const resArea = document.getElementById('result-page');
+            resArea.style.display = "block";
+
+            // 建立診所列表 HTML
+            let clinicsHtml = configData.clinics.map(c => `
+                <div class="clinic-item">
+                    <div class="clinic-name">${c.name}</div>
+                    <div class="clinic-info">📍 ${c.address}<br>📞 ${c.phone}</div>
+                    <a href="${c.line}" target="_blank" class="add-line-btn" onclick="recordClick('${c.name}')">加入 LINE 諮詢</a>
+                </div>
+            `).join('');
+
+            resArea.innerHTML = `
+                <div class="result-card" style="border-color:${currentLevel.color};">
+                    <h2 style="color:${currentLevel.color}">${currentLevel.title}</h2>
+                    <p>受測者：<b>${realName}</b> (${userAge}歲)</p>
+                    <p>測驗編號：<span class="test-id">${testID}</span></p>
+                    <p style="background:${currentLevel.color}11; padding:10px; border-radius:10px;">${currentLevel.desc}</p>
+                    
+                    <div class="clinic-box">
+                        <p style="font-weight:bold; color:#555;">📍 推薦就診診所 (請選擇離您最近的)：</p>
+                        ${clinicsHtml}
+                    </div>
+                </div>
+            `;
+
+            // 將完整資料送回 Google Sheet
+            fetch(API_URL, {
+                method: "POST",
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: "saveResult",
+                    testID: testID, 
+                    realName: realName, 
+                    birthday: userBirthday,
+                    userAge: userAge, 
+                    score: score, 
+                    level: currentLevel.title, 
+                    details: userAnswers 
+                })
+            });
+        }
+    </script>
+</body>
+</html>
