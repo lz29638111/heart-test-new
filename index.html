@@ -72,7 +72,7 @@
 
     <script>
         // 請務必替換成部署後的後端 URL
-        const API_URL = "https://script.google.com/macros/s/AKfycbwPYLcEmyspm5IeGi1Qg4lZgsJqNStwrLYfVVA_IfQtk74k-ii-enUBu93Syl9T5PQ/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzxg4TwbtKXLwmB427AvWC8RBgTX0Daf0iyIPeaewqhDjurFLOqOtVEIR8nhcfUA6jp/exec";
         
         let realName = "", userAge = 0, userBirthday = "", testID = "";
         let questionList = [], currentIndex = 0, userAnswers = [];
@@ -139,7 +139,7 @@
 
         function showQuestion() {
             const q = questionList[currentIndex];
-            document.getElementById('q-image').src = q.img || "https://and19868-gif.github.io/heart-test/cover.jpg";
+            document.getElementById('q-image').src = q.img || "https://lz29638111.github.io/heart-test-new/cover.jpg";
             document.getElementById('q-text').innerText = q.text;
             document.getElementById('progress').style.width = ((currentIndex + 1) / questionList.length * 100) + "%";
         }
