@@ -166,6 +166,9 @@
         function submitResult() {
             const score = userAnswers.filter(v => v).length;
             
+            // 【新增】強制截圖彈窗提醒：使用者點擊「確定」後才會看到結果
+            alert("🎉 檢測完成！\n\n您的專屬編號是：" + testID + "\n為了保障您的權益，請務必【截圖保存】下一頁的內容，\n或在加入 LINE 諮詢時提供此編號。");
+            
             // 從 configData.levels 找尋對應得分的定義
             let currentLevel = configData.levels.find(l => score >= l.min && score <= l.max) || configData.levels[0];
 
@@ -173,11 +176,9 @@
             const resArea = document.getElementById('result-page');
             resArea.style.display = "block";
 
-            // 建立診所列表 HTML (加入地圖與撥號功能)
+            // 建立診所列表 HTML (包含地圖與撥號功能)
             let clinicsHtml = configData.clinics.map(c => {
-                // 處理電話：移除所有空格或符號，確保手機撥號正確
                 const purePhone = c.phone.replace(/[^0-9]/g, '');
-                // 處理地圖：將地址轉為 URL 編碼，避免中文亂碼
                 const mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(c.address);
 
                 return `
@@ -197,7 +198,16 @@
                 `;
             }).join('');
 
+            // 渲染結果頁面 (包含頂部紅色提醒區塊)
             resArea.innerHTML = `
+                <div style="background: #fff0f0; border: 2px solid #ff4d4f; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 12px rgba(255,77,79,0.1);">
+                    <div style="color: #ff4d4f; font-weight: bold; font-size: 16px; margin-bottom: 5px;">⚠️ 重要提醒：請立即截圖 ⚠️</div>
+                    <div style="font-size: 14px; color: #333;">
+                        您的測驗編號：<b style="font-size: 20px; color: var(--purple); font-family: monospace;">${testID}</b>
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">( 建議截圖保存，以免關閉網頁後紀錄遺失 )</div>
+                </div>
+
                 <div class="result-card" style="border-color:${currentLevel.color};">
                     <h2 style="color:${currentLevel.color}">${currentLevel.title}</h2>
                     <p>受測者：<b>${realName}</b> (${userAge}歲)</p>
