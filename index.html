@@ -173,14 +173,29 @@
             const resArea = document.getElementById('result-page');
             resArea.style.display = "block";
 
-            // 建立診所列表 HTML
-            let clinicsHtml = configData.clinics.map(c => `
+            // 建立診所列表 HTML (加入地圖與撥號功能)
+            let clinicsHtml = configData.clinics.map(c => {
+                // 處理電話：移除所有空格或符號，確保手機撥號正確
+                const purePhone = c.phone.replace(/[^0-9]/g, '');
+                // 處理地圖：將地址轉為 URL 編碼，避免中文亂碼
+                const mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(c.address);
+
+                return `
                 <div class="clinic-item">
                     <div class="clinic-name">${c.name}</div>
-                    <div class="clinic-info">📍 ${c.address}<br>📞 ${c.phone}</div>
+                    <div class="clinic-info">
+                        <a href="${mapUrl}" target="_blank" style="text-decoration:none; color:inherit;">
+                           📍 ${c.address} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(導航)</span>
+                        </a>
+                        <br>
+                        <a href="tel:${purePhone}" style="text-decoration:none; color:inherit;">
+                           📞 ${c.phone} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(撥打)</span>
+                        </a>
+                    </div>
                     <a href="${c.line}" target="_blank" class="add-line-btn" onclick="recordClick('${c.name}')">加入 LINE 諮詢</a>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             resArea.innerHTML = `
                 <div class="result-card" style="border-color:${currentLevel.color};">
