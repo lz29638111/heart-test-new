@@ -30,7 +30,6 @@
         #quiz-page, #result-page { display: none; }
         .result-card { padding: 20px; border-radius: 20px; text-align: left; border: 3px solid; line-height: 1.7; background: #fff; }
         
-        /* 診所列表樣式 */
         .clinic-box { margin-top: 20px; border-top: 2px dashed #eee; padding-top: 20px; }
         .clinic-item { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; border: 1px solid #eee; }
         .clinic-name { font-weight: bold; color: var(--purple); font-size: 17px; margin-bottom: 5px; }
@@ -41,7 +40,10 @@
     </style>
 </head>
 <body>
-    <div id="start-page">
+    <div class="container">
+        <img src="https://drive.google.com/thumbnail?id=1hRglfaST9dNQCUCELjSmgyMdvLUVtkLN&sz=w500" class="logo">
+        
+        <div id="start-page">
             <h2>血管健康自測系統</h2>
             <div class="desc-box">透過專業指標，了解您的血管老化風險。測驗後將提供照護建議與鄰近診所資訊。</div>
             
@@ -75,20 +77,16 @@
         </div>
 
         <div id="result-page"></div>
-    </div>
-
-    <script>
-        // 請務必替換成部署後的後端 URL
+    </div> <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzZ4RMQeULTilOxmVlWLqh8Dee4Ol_c2Q22WdnsV0u8mMn6nd_kk9Pkio2xGAhAbbnx/exec";
         
         let realName = "", userAge = 0, userBirthday = "", userGender = "", testID = "";
         let questionList = [], currentIndex = 0, userAnswers = [];
-        let configData = {}; // 存放診所與分析邏輯
+        let configData = {}; 
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
             
-            // --- 【修改部分：改用 Radio Button 取值】 ---
             const genderNodes = document.getElementsByName('gender');
             userGender = "";
             for (const node of genderNodes) {
@@ -97,16 +95,13 @@
                     break;
                 }
             }
-            // ----------------------------------------
 
             const birthInput = document.getElementById('input-birthday').value.trim();
             
-            // 防呆：姓名、性別、生日都必須填寫
             if(!realName || !userGender || birthInput.length < 6) {
                 return alert("請完整填寫姓名、勾選性別並輸入生日 (如：660606)");
             }
 
-            // --- 解析民國年月日邏輯 ---
             try {
                 const day = parseInt(birthInput.slice(-2));
                 const month = parseInt(birthInput.slice(-4, -2));
@@ -120,7 +115,6 @@
                     return alert("生日日期格式有誤，請檢查");
                 }
 
-                // 計算精準年齡
                 userAge = today.getFullYear() - birthDate.getFullYear();
                 const m = today.getMonth() - birthDate.getMonth();
                 if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
@@ -131,14 +125,12 @@
                 return alert("生日格式解析失敗，請輸入正確的數字格式");
             }
 
-            // 產生唯一編號
             testID = "V-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
             const btn = document.getElementById('mainStartBtn');
             btn.innerText = "正在初始化...";
             btn.disabled = true;
 
-            // 一次抓取所有資料
             fetch(API_URL).then(res => res.json()).then(data => {
                 questionList = data.questions;
                 configData = { clinics: data.clinics, levels: data.levels };
@@ -171,7 +163,6 @@
         }
 
         function recordClick(clinicName) {
-            // 當使用者點擊 LINE 好友連結時，發送一個小訊號到後端
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
@@ -181,18 +172,14 @@
 
         function submitResult() {
             const score = userAnswers.filter(v => v).length;
-            
-            // 【新增】強制截圖彈窗提醒：使用者點擊「確定」後才會看到結果
             alert("🎉 檢測完成！\n\n您的專屬編號是：" + testID + "\n為了保障您的權益，請務必【截圖保存】下一頁的內容，\n或在加入 LINE 諮詢時提供此編號。");
             
-            // 從 configData.levels 找尋對應得分的定義
             let currentLevel = configData.levels.find(l => score >= l.min && score <= l.max) || configData.levels[0];
 
             document.getElementById('quiz-page').style.display = "none";
             const resArea = document.getElementById('result-page');
             resArea.style.display = "block";
 
-            // 建立診所列表 HTML (包含地圖與撥號功能)
             let clinicsHtml = configData.clinics.map(c => {
                 const purePhone = c.phone.replace(/[^0-9]/g, '');
                 const mapUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(c.address);
@@ -202,11 +189,11 @@
                     <div class="clinic-name">${c.name}</div>
                     <div class="clinic-info">
                         <a href="${mapUrl}" target="_blank" style="text-decoration:none; color:inherit;">
-                           📍 ${c.address} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(導航)</span>
+                            📍 ${c.address} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(導航)</span>
                         </a>
                         <br>
                         <a href="tel:${purePhone}" style="text-decoration:none; color:inherit;">
-                           📞 ${c.phone} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(撥打)</span>
+                            📞 ${c.phone} <span style="font-size:11px; color:var(--purple); text-decoration:underline;">(撥打)</span>
                         </a>
                     </div>
                     <a href="${c.line}" target="_blank" class="add-line-btn" onclick="recordClick('${c.name}')">加入 LINE 諮詢</a>
@@ -214,7 +201,6 @@
                 `;
             }).join('');
 
-            // 渲染結果頁面 (包含頂部紅色提醒區塊)
             resArea.innerHTML = `
                 <div style="background: #fff0f0; border: 2px solid #ff4d4f; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 12px rgba(255,77,79,0.1);">
                     <div style="color: #ff4d4f; font-weight: bold; font-size: 16px; margin-bottom: 5px;">⚠️ 重要提醒：請立即截圖 ⚠️</div>
@@ -237,7 +223,6 @@
                 </div>
             `;
 
-            // 將完整資料送回 Google Sheet
             fetch(API_URL, {
                 method: "POST",
                 mode: 'no-cors',
@@ -245,7 +230,7 @@
                     action: "saveResult",
                     testID: testID, 
                     realName: realName,
-                    gender: userGender, // 新增這行，讓性別傳回後台 
+                    gender: userGender, 
                     birthday: userBirthday,
                     userAge: userAge, 
                     score: score, 
