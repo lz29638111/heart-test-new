@@ -48,10 +48,21 @@
             <h2>血管健康自測系統</h2>
             <div class="desc-box">透過專業指標，了解您的血管老化風險。測驗後將提供照護建議與鄰近診所資訊。</div>
             
-            <label class="label-text">您的姓名</label>
-            <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
+            <div style="display: flex; gap: 15px; margin-bottom: 5px;">
+                <div style="flex: 2;">
+                    <label class="label-text">您的姓名</label>
+                    <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
+                </div>
+                <div style="flex: 1;">
+                    <label class="label-text">性別</label>
+                    <select id="input-gender" class="info-input" style="appearance: none; background: white; cursor: pointer;">
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                </div>
+            </div>
             
-            <label class="label-text">出生年月日 (民國年月日，如：660606)</label>
+            <label class="label-text">出生年月日 (民國年，如：660606)</label>
             <input type="tel" id="input-birthday" class="info-input" placeholder="例如：660606" maxlength="7">
             
             <button class="start-btn" id="mainStartBtn" onclick="startQuiz()">開始免費檢測</button>
@@ -74,12 +85,14 @@
         // 請務必替換成部署後的後端 URL
         const API_URL = "https://script.google.com/macros/s/AKfycbzxg4TwbtKXLwmB427AvWC8RBgTX0Daf0iyIPeaewqhDjurFLOqOtVEIR8nhcfUA6jp/exec";
         
-        let realName = "", userAge = 0, userBirthday = "", testID = "";
+        let realName = "", userAge = 0, userBirthday = "", userGender = "", testID = "";
         let questionList = [], currentIndex = 0, userAnswers = [];
         let configData = {}; // 存放診所與分析邏輯
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
+            // 新增這行抓取性別
+            userGender = document.getElementById('input-gender').value;
             const birthInput = document.getElementById('input-birthday').value.trim();
             
             // 防呆：姓名不能為空，生日長度需在 6~7 位之間
@@ -228,7 +241,8 @@
                 body: JSON.stringify({ 
                     action: "saveResult",
                     testID: testID, 
-                    realName: realName, 
+                    realName: realName,
+                    gender: userGender, // 新增這行，讓性別傳回後台 
                     birthday: userBirthday,
                     userAge: userAge, 
                     score: score, 
