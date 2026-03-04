@@ -41,25 +41,21 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <img src="https://drive.google.com/thumbnail?id=1hRglfaST9dNQCUCELjSmgyMdvLUVtkLN&sz=w500" class="logo">
-        
-        <div id="start-page">
+    <div id="start-page">
             <h2>血管健康自測系統</h2>
             <div class="desc-box">透過專業指標，了解您的血管老化風險。測驗後將提供照護建議與鄰近診所資訊。</div>
             
-            <div style="display: flex; gap: 15px; margin-bottom: 5px;">
-                <div style="flex: 2;">
-                    <label class="label-text">您的姓名</label>
-                    <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
-                </div>
-                <div style="flex: 1;">
-                    <label class="label-text">性別</label>
-                    <select id="input-gender" class="info-input" style="appearance: none; background: white; cursor: pointer;">
-                        <option value="男">男</option>
-                        <option value="女">女</option>
-                    </select>
-                </div>
+            <label class="label-text">您的姓名</label>
+            <input type="text" id="input-name" class="info-input" placeholder="請輸入姓名">
+
+            <label class="label-text">性別</label>
+            <div style="display: flex; gap: 30px; margin: 10px 0 25px 5px; justify-content: flex-start; align-items: center;">
+                <label style="cursor: pointer; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="gender" value="男" style="width: 22px; height: 22px; accent-color: var(--purple);"> 男性
+                </label>
+                <label style="cursor: pointer; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="gender" value="女" style="width: 22px; height: 22px; accent-color: var(--purple);"> 女性
+                </label>
             </div>
             
             <label class="label-text">出生年月日 (民國年，如：660606)</label>
@@ -91,26 +87,35 @@
 
         function startQuiz() {
             realName = document.getElementById('input-name').value.trim();
-            // 新增這行抓取性別
-            userGender = document.getElementById('input-gender').value;
+            
+            // --- 【修改部分：改用 Radio Button 取值】 ---
+            const genderNodes = document.getElementsByName('gender');
+            userGender = "";
+            for (const node of genderNodes) {
+                if (node.checked) {
+                    userGender = node.value;
+                    break;
+                }
+            }
+            // ----------------------------------------
+
             const birthInput = document.getElementById('input-birthday').value.trim();
             
-            // 防呆：姓名不能為空，生日長度需在 6~7 位之間
-            if(!realName || birthInput.length < 6) return alert("請完整填寫姓名與生日格式 (如：660606)");
+            // 防呆：姓名、性別、生日都必須填寫
+            if(!realName || !userGender || birthInput.length < 6) {
+                return alert("請完整填寫姓名、勾選性別並輸入生日 (如：660606)");
+            }
 
             // --- 解析民國年月日邏輯 ---
             try {
-                // 取得日(最後兩碼)、月(倒數三四碼)
                 const day = parseInt(birthInput.slice(-2));
                 const month = parseInt(birthInput.slice(-4, -2));
-                // 年份：扣除月日後剩下的前面號碼即為民國年
                 const rocYear = parseInt(birthInput.slice(0, birthInput.length - 4));
                 const year = rocYear + 1911;
 
                 const birthDate = new Date(year, month - 1, day);
                 const today = new Date();
 
-                // 檢查日期合法性 (例如月分不能大於12)
                 if (isNaN(birthDate.getTime()) || month > 12 || month < 1 || day > 31 || day < 1) {
                     return alert("生日日期格式有誤，請檢查");
                 }
@@ -120,13 +125,11 @@
                 const m = today.getMonth() - birthDate.getMonth();
                 if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) userAge--;
 
-                // 【關鍵】直接存入原始輸入字串，方便後台手動搜尋
                 userBirthday = birthInput; 
 
             } catch (e) {
                 return alert("生日格式解析失敗，請輸入正確的數字格式");
             }
-            // -----------------------
 
             // 產生唯一編號
             testID = "V-" + Math.random().toString(36).substr(2, 6).toUpperCase();
